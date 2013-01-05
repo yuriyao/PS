@@ -1,0 +1,38 @@
+Creat temp file cache/0
+From http://localhost:8080/global/python import test1
+Total_len is 45 and buffer len is 1024
+The module name is test1
+--------------------
+Object dict info:
+doc: dict() -> new empty dictionary
+dict(mapping) -> new dictionary initialized from a mapping object's
+    (key, value) pairs
+dict(iterable) -> new dictionary initialized as if via:
+    d = {}
+    for k, v in iterable:
+        d[k] = v
+dict(**kwargs) -> new dictionary initialized with the name=value pairs
+    in the keyword argument list.  For example:  dict(one=1, two=2)
+base size is 124
+Length unchangable object.
+repr:{'__builtins__': <module '__builtin__' (built-in)>, '__file__': 'web_test.py', '__package__': None, 'psimport': <module 'psimport' from '/home/yuri/development/Ps/Ps/src/lib_python/c_driver/test_/psimport.so'>, '__name__': '__main__', '__doc__': None}
+str:{'__builtins__': <module '__builtin__' (built-in)>, '__file__': 'web_test.py', '__package__': None, 'psimport': <module 'psimport' from '/home/yuri/development/Ps/Ps/src/lib_python/c_driver/test_/psimport.so'>, '__name__': '__main__', '__doc__': None}
+hash value: -1
+It's an uncallable object
+It's an uniterable object
+----------------------
+--------------------
+Object module info:
+doc: module(name[, doc])
+
+Create a module object.
+The name must be a string; the optional doc argument can have any type.
+base size is 12
+Length unchangable object.
+repr:<module 'test1' from ''>
+str:<module 'test1' from ''>
+hash value: -1216657924
+It's an uncallable object
+It's an uniterable object
+----------------------
+ret is 0, Import module test1 successfully
