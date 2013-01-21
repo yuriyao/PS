@@ -4,7 +4,7 @@
 #ifndef LOG_H
 #define LOG_H
 
-#ifdef _cplusplus
+#ifdef __cplusplus
 extern "C"
 {
 #endif
@@ -92,7 +92,7 @@ BOOL Ps_CloseLog();
 //#define LOG_DEBUG 
 
 
-#ifdef _cplusplus
+#ifdef __cplusplus
 }
 #endif
 

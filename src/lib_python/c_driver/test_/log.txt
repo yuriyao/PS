@@ -1,7 +1,9 @@
 Creat temp file cache/0
 From http://localhost:8080/global/python import test1
 Total_len is 45 and buffer len is 1024
-The module name is test1
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+The module name is t
 --------------------
 Object dict info:
 doc: dict() -> new empty dictionary
@@ -31,8 +33,23 @@ base size is 12
 Length unchangable object.
 repr:<module 'test1' from ''>
 str:<module 'test1' from ''>
-hash value: -1216657924
+hash value: -1217579740
 It's an uncallable object
 It's an uniterable object
 ----------------------
-ret is 0, Import module test1 successfully
+ret is 0, Import module t successfully
+******************************************--------------------
+Object module info:
+doc: module(name[, doc])
+
+Create a module object.
+The name must be a string; the optional doc argument can have any type.
+base size is 12
+Length unchangable object.
+repr:<module 'test1' from ''>
+str:<module 'test1' from ''>
+hash value: -1217579740
+It's an uncallable object
+It's an uniterable object
+----------------------
+******************************************

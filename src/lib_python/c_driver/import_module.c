@@ -24,6 +24,9 @@ static PyThread_type_lock module_lock = NULL;
 
 static unsigned int file_name_no = 0;
 
+/*使用2.6a1的pyc文件*/
+#define PYC_MAGIC (62161 | ((long)'\r'<<16) | ((long)'\n'<<24))
+
 BOOL
 Ps_ImportInit()
 {
@@ -83,6 +86,7 @@ create_module(char *name, PyObject *co)
 	PyObject *m;
 	PyObject *d;
 	PyObject *v;
+	PyObject *err;
 	assert(name);
 	assert(co);
 	/*创建一个新的模块*/
@@ -105,10 +109,15 @@ create_module(char *name, PyObject *co)
 	if(PyDict_SetItemString(d, "__file__", v) != 0)
 		PyErr_Clear();
 	Py_DECREF(v);
+#ifdef IMPORT_DEBUG
+	Ps_Log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n", Ps_LOG_NORMAL);
+	//Ps_LogObject(d, Ps_LOG_NORMAL);
+	Ps_Log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n", Ps_LOG_NORMAL);
+#endif
 
 	/*执行字节码*/
 	v = PyEval_EvalCode((PyCodeObject*)co, d, d);
-	if(v == NULL)
+	if(v == NULL || (err = PyErr_Occurred()))
 	{
 		Ps_LogObject(d, Ps_LOG_WARING);
 		Ps_Log("PyEval_EvalCode failed\n", Ps_LOG_WARING);
@@ -145,7 +154,6 @@ __import__(FILE *file, char *name, char *path, char *as, PyObject *local, PyObje
 		Ps_Log("compile failed\n", Ps_LOG_WARING);
 		return NULL;
 	}
-	
 	m = create_module(name, (PyObject*)co);
 	if(m == NULL)
 	{
@@ -184,6 +192,79 @@ __import__(FILE *file, char *name, char *path, char *as, PyObject *local, PyObje
 	}
 	
 	return m;
+}
+
+static PyObject*
+__import__compiled(FILE *f, char *name, char *path, char *as, PyObject *local, PyObject *global)
+{
+	char *module_name = as ? as : name;
+	PyCodeObject *co;
+	PyObject *m;
+
+	if(name == NULL)
+		return NULL;
+	//比较文件的魔数
+	if(PyMarshal_ReadLongFromFile(f) != PYC_MAGIC)
+	{
+		PyErr_Format(PyExc_ImportError, "Bad magic number of %s", name);
+		return NULL;
+	}
+	//读掉时间信息
+	(void*)PyMarshal_ReadLongFromFile(f);
+	//创建PyCodeObject
+	co = (PyCodeObject*)PyMarshal_ReadLastObjectFromFile(f);
+	if(co == NULL)
+	{
+		PyErr_Format(PyExc_ImportError, "Cannot create code object from module %s", name);
+		return NULL;
+	}
+	if(!PyCode_Check(co))
+	{
+		PyErr_Format(PyExc_ImportError, "Non-code object in module %s", name);
+		Py_DECREF(co);
+		return NULL;
+	}
+	/*创建模块*/
+	m = create_module(name, (PyObject*)co);
+	if(m == NULL)
+	{
+		Ps_Log("create_module failed\n", Ps_LOG_WARING);
+		return NULL;
+	}
+	Py_DECREF(co);
+
+	/*将模块导入命名空间*/
+	if(local && PyDict_Check(local))
+	{
+		Py_INCREF(m);
+#ifdef IMPORT_DEBUG
+		Ps_LogFormat("The module name is %s\n", Ps_LOG_NORMAL, module_name);
+		Ps_LogObject(local, Ps_LOG_WARING);
+		Ps_LogObject(m, Ps_LOG_WARING);
+		int ret = 
+#endif
+		PyDict_SetItemString(local, module_name, m);
+#ifdef IMPORT_DEBUG
+		if(ret == 0)
+			Ps_LogFormat("ret is %d, Import module %s successfully\n", Ps_LOG_NORMAL, ret, module_name);
+		else
+			Ps_LogFormat("ret is %d, Import module %s failed\n", Ps_LOG_NORMAL, ret, module_name);
+#endif
+	}
+	else
+	{
+		PyObject *info = PyString_FromFormat("Import module %s failed", name);
+		if(!info)
+		{
+			PyErr_SetString(PyExc_ImportError, "Import module failed");
+		}
+		else
+			PyErr_SetObject(PyExc_ImportError, info);
+		return NULL;
+	}
+	
+	return m;
+
 }
 
 static FILE*
@@ -297,6 +378,8 @@ from_web_import_as(char *website, char *module, char *as)
 #define WEB_PATH_MAX 1024
     char buffer[WEB_PATH_MAX];
     char file_name[Ps_NAME_MAX];
+    /*加载函数的函数指针*/
+    PyObject* (*loader)(FILE *f, char *name, char *path, char *as, PyObject *local, PyObject *global);
 
     FILE *f;
     PyObject *m;
@@ -329,10 +412,11 @@ from_web_import_as(char *website, char *module, char *as)
        PyErr_SetString(PyExc_ImportError, "The path to get python module is too long");
        return NULL;
     }
+    loader = __import__;
     if(!Ps_DownloadTimeout(buffer, f, TIME_OUT))
     {
         Ps_Log("Cannot download %s's py file\n", Ps_LOG_WARING);
-       /*再次尝试下载pyc文件*/
+        /*再次尝试下载pyc文件*/
         //
         (void)get_url(website, module, TRUE, buffer, WEB_PATH_MAX);
         if(!Ps_DownloadTimeout(buffer, f, TIME_OUT))
@@ -341,12 +425,27 @@ from_web_import_as(char *website, char *module, char *as)
             PyErr_Format(PyExc_ImportError, "Cannot download module %s file from %s\n", module, website);
             return NULL;
         }
+        /*使用加载pyc文件的加载函数*/
+        loader = __import__compiled;
     }
-    if(!(m = __import__(f, module, NULL, as, PyEval_GetLocals(), PyEval_GetGlobals())))
+    /*加载py文件*/
+    fclose(f);
+    if((f = fopen(file_name, "r")) == NULL)
+    {
+    	Ps_Log("Open temp file failed\n", Ps_LOG_WARING);
+    	PyErr_SetString(PyExc_ImportError, "open temp file failed");
+    	return NULL;
+    }
+    if(!(m = loader(f, module, NULL, as, PyEval_GetLocals(), PyEval_GetGlobals())))
     {
         fclose(f);
         return NULL;
     }
+#ifdef IMPORT_DEBUG
+    Ps_Log("******************************************", Ps_LOG_NORMAL);
+    Ps_LogObject(m, Ps_LOG_NORMAL);
+    Ps_Log("******************************************", Ps_LOG_NORMAL);
+#endif
     Py_INCREF(Py_True);
     return Py_True;
 }
@@ -394,12 +493,12 @@ Ps_FromWebImportAs(PyObject *self, PyObject *args, PyObject *kwds)
 PyObject* 
 Ps_Import(PyObject *self, PyObject *args, PyObject *kws)
 {
-	struct _ts *state;
+	//struct _ts *state;
 	char *module;
 	char *arglist[] = {"module", 0};                                                                                           
 	FILE *f;
 	PyObject *m;
-	PyObject *local = NULL, *global = NULL;
+	//PyObject *local = NULL, *global = NULL;
 
 	if(!PyArg_ParseTupleAndKeywords(args, kws, "s:import", arglist, &module))
 	{
@@ -411,18 +510,20 @@ Ps_Import(PyObject *self, PyObject *args, PyObject *kws)
 		Ps_LogFormat("Open file %s failed\n", Ps_LOG_WARING, module);
 		goto error;
 	}
-	state = PyThreadState_Get();
+	/*state = PyThreadState_Get();
 	
 	if(state->frame)
 	{
 		local = state->frame->f_locals;
 		global = state->frame->f_globals;
-	}
+	}*/
 
-	if((m = __import__(f, module, NULL, NULL, local, global)) == NULL)
+	if((m = __import__(f, module, NULL, NULL, PyEval_GetLocals(), PyEval_GetGlobals())) == NULL)
 	{
 		if(PyErr_Occurred())
+		{
 			return NULL;
+		}
 		goto error;
 	}
 	Py_INCREF(Py_True);

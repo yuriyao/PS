@@ -4,7 +4,7 @@
 #ifndef _INIT_CLEAR_H
 #define _INIT_CLEAR_H
 
-#ifdef _cplusplus
+#ifdef __cplusplus
 extern "C"
 {
 #endif
@@ -23,7 +23,7 @@ extern "C"
  Ps_MMClear()
 
 
-#ifdef _cplusplus
+#ifdef __cplusplus
 }
 #endif
 

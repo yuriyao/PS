@@ -1,6 +1,8 @@
+#include <python2.6/Python.h>
+#include <python2.6/pythread.h>
 #include <stdlib.h>
 #include "../include/log.h"
-#include <python2.6/pythread.h>
+
 #include <assert.h>
 #include "../include/mm.h"
 

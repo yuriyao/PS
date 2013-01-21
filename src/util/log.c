@@ -1,3 +1,4 @@
+
 /**
  *  Ps的log
  **/
@@ -50,7 +51,7 @@ Ps_Log(char *info, int type)
 	//assert(log_error);
 	//assert(log_normal);
 	GET_LOG_LOCK();
-	printf("%d\n", type);
+	//printf("%d\n", type);
 	switch(type)
 	{
 	case Ps_LOG_WARING:

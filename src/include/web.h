@@ -4,7 +4,7 @@
 #ifndef _WEB_H
 #define _WEB_H
 
-#ifdef _cplusplus
+#ifdef __cplusplus
 extern "C"
 {
 #endif
@@ -39,9 +39,9 @@ BOOL Ps_DownloadTimeout(char *url, FILE *p, int timeout);
  **/
 BOOL Ps_WebClear();
 
-#define WEB_DEBUG
+//#define WEB_DEBUG
 
-#ifdef _cplusplus
+#ifdef __cplusplus
 }
 #endif
 

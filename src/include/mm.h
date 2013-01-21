@@ -1,6 +1,6 @@
 #include "../include/size.h"
 
-#ifdef _cplusplus
+#ifdef __cplusplus
 extern "C"
 {
 #endif
@@ -27,6 +27,6 @@ extern "C"
 	 BOOL Ps_MMClear();
 
 	//#define MM_DEBUG
-#ifdef _cplusplus
+#ifdef __cplusplus
 }
 #endif
